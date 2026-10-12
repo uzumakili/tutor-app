@@ -1,5 +1,5 @@
 // 改動 app 檔案後把版本號加一，舊快取才會被清掉
-const CACHE = 'tutor-v1';
+const CACHE = 'tutor-v2';
 const SHELL = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png'];
 const CDN = 'https://cdnjs.cloudflare.com';
 

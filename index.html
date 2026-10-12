@@ -362,6 +362,7 @@ const sync = {
         if ((r.status !== 409 && r.status !== 422) || attempt >= 3) throw this.fail(r);
       }
       this.setStatus(`已同步 ${new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })}`);
+      rollTick(); // another device's copy may carry a lesson date that has since passed
     } catch (e) {
       this.setStatus(`⚠ 同步失敗：${e instanceof TypeError ? '沒有網路連線' : e.message}`);
     }
@@ -376,8 +377,12 @@ const sync = {
 };
 // Coming back to the app (e.g. picking up the tablet) fetches what other devices changed
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible' && Date.now() - sync.lastRun > 30000 && !ui.editing) sync.run();
+  if (document.visibilityState !== 'visible') return;
+  rollTick();
+  if (Date.now() - sync.lastRun > 30000 && !ui.editing) sync.run();
 });
+// Catches midnight passing while the app is left open
+setInterval(rollTick, 60000);
 
 let saveTimer;
 function save() {
@@ -412,6 +417,27 @@ function examCountdown(date) {
   if (!date) return '';
   const n = daysUntil(date);
   return n > 0 ? `<b style="color:var(--warn)">還有 ${n} 天</b>` : n === 0 ? '<b style="color:var(--danger)">就是今天</b>' : '<span class="muted">已考完</span>';
+}
+// Lessons are weekly: once a "next lesson" day is over (past midnight), move it on by whole weeks
+// until it is today or later. Returns whether anything changed.
+function rollNextLessons() {
+  const now = today();
+  let changed = false;
+  for (const s of db.students) {
+    if (!s.nextLesson || s.nextLesson >= now) continue;
+    const d = new Date(s.nextLesson);
+    if (isNaN(d)) continue;
+    while (d.toISOString().slice(0, 10) < now) d.setUTCDate(d.getUTCDate() + 7);
+    s.nextLesson = d.toISOString().slice(0, 10);
+    changed = true;
+  }
+  return changed;
+}
+function rollTick() {
+  if (!rollNextLessons()) return;
+  save();
+  // Don't yank a form out from under someone who is typing; the new dates show on the next render
+  if (!ui.editing && !$('#dlg').open && !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName)) render();
 }
 // Nearest exam that hasn't happened yet, as [title, date]
 const nextExam = s => EXAMS.map(([k, t]) => [t, s.exams?.[k]]).filter(([, d]) => d && daysUntil(d) >= 0).sort((a, b) => a[1].localeCompare(b[1]))[0];
@@ -605,7 +631,7 @@ function viewStudent() {
     <div class="panel"><div class="grid" style="margin:0">
       <div><div class="muted small">目標</div>${esc(s.goal) || '—'}</div>
       <div><div class="muted small">備註</div><span style="white-space:pre-wrap">${esc(s.notes) || '—'}</span></div>
-      <label>下次上課<input type="date" value="${esc(s.nextLesson)}" data-change="nextLesson"></label>
+      <label>下次上課<span class="muted">（過了當天會自動往後一週）</span><input type="date" value="${esc(s.nextLesson)}" data-change="nextLesson"></label>
     </div></div>
     <div class="tabs">${tabs.map(([k, t]) => `<button class="${ui.tab === k ? 'on' : ''}" data-act="tab" data-tab="${k}">${t}</button>`).join('')}</div>`;
   return head + ({ units: tabUnits, lessons: tabLessons, materials: tabMaterials })[ui.tab](s);
@@ -1009,6 +1035,7 @@ document.addEventListener('submit', e => {
     return;
   }
   initStamps();
+  if (rollNextLessons()) save();
   render();
   sync.run();
   // Ask the browser not to evict our data when the device runs low on space
