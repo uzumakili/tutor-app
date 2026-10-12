@@ -1,0 +1,1023 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2f6f5e">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="家教助手">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
+<title>家教助手</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.11/katex.min.css">
+<style>
+  :root {
+    --bg: #f6f5f1; --panel: #fff; --ink: #23262b; --muted: #6d737d; --line: #e3e1da;
+    --accent: #2f6f5e; --accent-ink: #fff; --accent-soft: #e4efeb; --warn: #b4541a; --danger: #b3312c;
+    --todo: #9aa0a8; --doing: #2d6cb5; --done: #2f6f5e; --review: #b4541a;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.6 "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif; display: flex; min-height: 100vh; }
+  h1 { font-size: 22px; margin: 0 0 4px; } h2 { font-size: 17px; margin: 0 0 12px; } h3 { font-size: 15px; margin: 0; }
+  a { color: var(--accent); }
+
+  #nav { width: 200px; flex: none; background: var(--panel); border-right: 1px solid var(--line); padding: 20px 12px; display: flex; flex-direction: column; gap: 4px; position: sticky; top: 0; height: 100vh; }
+  #nav .brand { font-weight: 700; font-size: 17px; padding: 0 10px 14px; }
+  #nav button { all: unset; cursor: pointer; padding: 8px 10px; border-radius: 8px; color: var(--muted); }
+  #nav button:hover { background: var(--bg); }
+  #nav button.on { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  #nav-students { display: flex; flex-direction: column; gap: 2px; margin: 0 0 8px 10px; padding-left: 6px; border-left: 2px solid var(--line); }
+  #nav-students button { padding: 5px 10px; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #nav-students button.add { color: var(--accent); }
+  #save-state { margin-top: auto; }
+  #save-state, #sync-state { padding: 0 10px; font-size: 12px; color: var(--muted); }
+  main { flex: 1; min-width: 0; padding: 28px 32px 60px; max-width: 1040px; }
+
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; margin-bottom: 16px; }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .spread { justify-content: space-between; }
+  .muted { color: var(--muted); } .small { font-size: 13px; }
+  .head { margin-bottom: 18px; }
+
+  button.btn, a.btn { font: inherit; cursor: pointer; border: 1px solid var(--line); background: var(--panel); color: var(--ink); padding: 6px 14px; border-radius: 8px; text-decoration: none; white-space: nowrap; }
+  button.btn:hover { border-color: var(--accent); }
+  button.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  button.btn.danger { color: var(--danger); }
+  button.btn.link { border: none; background: none; padding: 2px 6px; color: var(--muted); }
+  button.btn.link:hover { color: var(--danger); }
+  button:disabled { opacity: .5; cursor: default; }
+
+  input, select, textarea { font: inherit; color: inherit; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; width: 100%; }
+  input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
+  textarea { resize: vertical; min-height: 64px; }
+  input[type=checkbox] { width: auto; }
+  label { display: block; font-size: 13px; color: var(--muted); }
+  label > input, label > select, label > textarea { margin-top: 3px; color: var(--ink); font-size: 15px; }
+  label.check { display: flex; gap: 8px; align-items: center; color: var(--ink); font-size: 14px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 12px; }
+  .grid .wide { grid-column: 1 / -1; }
+
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+  .card { cursor: pointer; margin: 0; }
+  .card:hover { border-color: var(--accent); }
+  .bar { height: 8px; background: var(--bg); border-radius: 4px; overflow: hidden; margin: 10px 0 6px; }
+  .bar > i { display: block; height: 100%; background: var(--accent); }
+  dl.facts { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; margin: 8px 0 0; font-size: 13px; }
+  dl.facts dt { color: var(--muted); } dl.facts dd { margin: 0; }
+
+  .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-bottom: 16px; }
+  .tabs button { all: unset; cursor: pointer; padding: 8px 14px; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px; }
+  .tabs button.on { color: var(--accent); border-color: var(--accent); font-weight: 600; }
+
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; font-size: 13px; font-weight: 500; color: var(--muted); padding: 4px 8px; }
+  td { padding: 6px 8px; border-top: 1px solid var(--line); vertical-align: middle; }
+  td.act { text-align: right; white-space: nowrap; }
+  tr.clickable { cursor: pointer; } tr.clickable:hover td { background: var(--bg); }
+  select.status { width: 104px; font-weight: 600; }
+  select.status[data-v=todo] { color: var(--todo); } select.status[data-v=doing] { color: var(--doing); }
+  select.status[data-v=done] { color: var(--done); } select.status[data-v=review] { color: var(--review); }
+  .pick { width: 30px; padding-right: 0; }
+  .bulk { position: sticky; bottom: 14px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; background: var(--ink); color: #fff; padding: 10px 16px; border-radius: 12px; box-shadow: 0 6px 20px rgba(0, 0, 0, .2); }
+  .bulk button.btn.link { color: #cfd3d8; margin-left: auto; }
+  select.exam { width: 112px; color: var(--muted); font-size: 13px; }
+  label.inline { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+  label.inline > input, label.inline > select { margin: 0; width: 150px; }
+  .tag { display: inline-block; font-size: 12px; padding: 1px 8px; border-radius: 10px; background: var(--accent-soft); color: var(--accent); }
+
+  .lesson { border-top: 1px solid var(--line); padding: 12px 0; }
+  .lesson:first-child { border-top: none; padding-top: 0; }
+  .lesson p { margin: 4px 0 0; white-space: pre-wrap; }
+  .lesson b { color: var(--muted); font-weight: 500; font-size: 13px; margin-right: 6px; }
+
+  .notice { border-left: 3px solid var(--warn); background: #fbf1e8; padding: 10px 14px; border-radius: 6px; margin-bottom: 16px; }
+  .notice.err { border-color: var(--danger); background: #fbeceb; }
+  .empty { text-align: center; padding: 40px 20px; color: var(--muted); }
+
+  .doc { line-height: 1.8; overflow-wrap: anywhere; }
+  .doc h1 { font-size: 22px; margin: 0 0 12px; } .doc h2 { font-size: 18px; margin: 24px 0 8px; padding-bottom: 4px; border-bottom: 1px solid var(--line); }
+  .doc h3 { font-size: 16px; margin: 18px 0 6px; }
+  .doc table { margin: 10px 0; } .doc th, .doc td { border: 1px solid var(--line); padding: 5px 10px; }
+  .doc blockquote { margin: 10px 0; padding: 6px 14px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 6px 6px 0; }
+  .doc code { background: var(--bg); padding: 1px 5px; border-radius: 4px; }
+  .doc hr { border: none; border-top: 1px dashed var(--line); margin: 24px 0; }
+  .doc .katex-display { overflow-x: auto; overflow-y: hidden; padding: 2px 0; }
+  .pulse { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); margin-right: 8px; animation: pulse 1s infinite alternate; }
+  @keyframes pulse { to { opacity: .25; } }
+
+  dialog { border: 1px solid var(--line); border-radius: 12px; padding: 22px 24px; width: min(520px, 92vw); color: var(--ink); }
+  dialog::backdrop { background: rgba(0, 0, 0, .3); }
+  #toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 8px 18px; border-radius: 20px; opacity: 0; pointer-events: none; transition: opacity .2s; }
+  #toast.on { opacity: .95; }
+  #print-area { display: none; }
+
+  @media (max-width: 760px) {
+    body { flex-direction: column; }
+    /* One row that scrolls sideways, so a long student list doesn't push the page down */
+    #nav { width: auto; height: auto; position: sticky; z-index: 5; flex-direction: row; align-items: center; overflow-x: auto; white-space: nowrap; border-right: none; border-bottom: 1px solid var(--line);
+      padding: calc(8px + env(safe-area-inset-top)) calc(10px + env(safe-area-inset-right)) 8px calc(10px + env(safe-area-inset-left)); }
+    #nav > *, #nav-students > * { flex: none; }
+    #nav .brand { padding: 0 8px 0 4px; } #save-state { margin: 0 0 0 auto; }
+    #nav-students { flex-direction: row; margin: 0; padding: 0 6px; border-left: 2px solid var(--line); border-right: 2px solid var(--line); }
+    #nav-students button { padding: 8px 10px; font-size: 15px; }
+    main { padding: 18px calc(14px + env(safe-area-inset-right)) calc(50px + env(safe-area-inset-bottom)) calc(14px + env(safe-area-inset-left)); }
+    .panel { padding: 14px; }
+    /* iOS zooms the page when a focused field's text is under 16px */
+    input, select, textarea, label > input, label > select, label > textarea { font-size: 16px; }
+    button.btn, a.btn, label.btn { padding: 8px 14px; }
+    .head .row { width: 100%; }
+    /* Unit rows become small cards: title on top, controls underneath */
+    table.units, table.units tbody { display: block; }
+    table.units tr { display: grid; grid-template-columns: 28px 1fr 1fr auto; gap: 6px 8px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
+    table.units td, table.units th { border: none; padding: 0; width: auto; }
+    table.units th { display: none; }
+    table.units th.pick { display: flex; align-items: center; gap: 8px; grid-column: 1 / -1; }
+    table.units th.pick::after { content: '全選這一區'; }
+    table.units td.pick { grid-area: 1 / 1; }
+    table.units .u-title { grid-area: 1 / 2 / auto / 4; font-weight: 600; }
+    table.units .act { grid-area: 1 / 4; }
+    table.units .u-status { grid-area: 2 / 2; } table.units .u-exam { grid-area: 2 / 3 / auto / -1; }
+    table.units .u-note { grid-area: 3 / 2 / auto / -1; }
+    table.units select { width: 100%; }
+    table.units input[type=checkbox], .pick input { width: 20px; height: 20px; }
+    label.inline > input, label.inline > select { width: 160px; }
+  }
+  @media print {
+    body { display: block; background: #fff; }
+    body > *:not(#print-area) { display: none !important; }
+    #print-area { display: block; font-size: 12pt; }
+    .doc h2, .doc h3 { break-after: avoid; } .doc li, .doc table { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<nav id="nav">
+  <div class="brand">家教助手</div>
+  <button data-act="go" data-view="home">學生總覽</button>
+  <div id="nav-students"></div>
+  <button data-act="go" data-view="generate">生成教材</button>
+  <button data-act="go" data-view="library">教材庫</button>
+  <button data-act="go" data-view="settings">設定</button>
+  <div id="save-state"></div>
+  <div id="sync-state"></div>
+</nav>
+<main id="main"></main>
+<div id="print-area" class="doc"></div>
+<dialog id="dlg"></dialog>
+<div id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.11/katex.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.11/contrib/mhchem.min.js"></script>
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const uid = () => crypto.randomUUID();
+const today = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 10); };
+
+const STATUS = { todo: '未開始', doing: '進行中', done: '已完成', review: '需複習' };
+const EXAMS = [['1', '第一次段考'], ['2', '第二次段考'], ['3', '第三次段考']];
+const SUBJECTS =['理化', '物理', '化學', '生物', '地球科學'];
+const TYPES = ['講義', '練習題', '小考卷', '重點整理'];
+const LEVELS = ['基礎', '中等', '進階', '由淺入深混合'];
+
+// Used when the app talks to Claude directly; on the PC the local server (serve.ps1) has its own copies
+const MODEL = 'claude-opus-5-5', EFFORT = 'high';
+const KEY_STORE = 'tutor-api-key', SYNC_STORE = 'tutor-sync', SYNC_FILE = 'tutor-data.json';
+
+// deleted: { id: time } tombstones, so a deletion on one device isn't undone by another device's copy
+let db = { students: [], materials: [], deleted: {} };
+let settings = { hasKey: false, model: '' };
+let ui = { view: 'home', studentId: null, tab: 'units', materialId: null, editing: false, libFilter: '', addExam: '1', sel: new Set(), selFor: null };
+let genForm = { studentId: '', type: '講義', subject: '理化', grade: '', topic: '', level: '中等', count: 10, extra: '', useRecords: true };
+let gen = { running: false, text: '', error: '', meta: null, ctrl: null };
+
+// ---------- storage ----------
+const idb = {
+  open() {
+    return this.ready ||= new Promise((res, rej) => {
+      const r = indexedDB.open('tutor', 1);
+      r.onupgradeneeded = () => r.result.createObjectStore('kv');
+      r.onsuccess = () => res(r.result);
+      r.onerror = () => rej(r.error);
+    });
+  },
+  async get(key) {
+    const d = await this.open();
+    return new Promise((res, rej) => {
+      const r = d.transaction('kv').objectStore('kv').get(key);
+      r.onsuccess = () => res(r.result);
+      r.onerror = () => rej(r.error);
+    });
+  },
+  async set(key, value) {
+    const d = await this.open();
+    return new Promise((res, rej) => {
+      const tx = d.transaction('kv', 'readwrite');
+      tx.objectStore('kv').put(value, key);
+      tx.oncomplete = () => res();
+      tx.onerror = () => rej(tx.error);
+    });
+  },
+};
+
+// Two homes for the same app: next to serve.ps1 on the PC (data file + key kept by the server),
+// or standalone as an installed web app (data in this browser, Claude called directly)
+const store = {
+  server: false,
+  async init() {
+    try {
+      const j = await fetch('/api/settings').then(r => r.json());
+      if ('hasKey' in j) { this.server = true; settings = j; }
+    } catch {}
+    if (!this.server) settings = { hasKey: !!localStorage.getItem(KEY_STORE), model: MODEL };
+  },
+  async load() {
+    return this.server ? fetch('/api/data').then(r => r.json()) : JSON.parse((await idb.get('data')) || '{}');
+  },
+  async save() {
+    if (!this.server) return idb.set('data', JSON.stringify(db));
+    const r = await fetch('/api/data', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(db) });
+    if (!r.ok) throw new Error();
+  },
+  async setKey(apiKey) {
+    if (this.server) {
+      settings = await fetch('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ apiKey }) }).then(r => r.json());
+    } else {
+      if (apiKey) localStorage.setItem(KEY_STORE, apiKey); else localStorage.removeItem(KEY_STORE);
+      settings.hasKey = !!apiKey;
+    }
+  },
+  generate(system, prompt, signal) {
+    if (this.server) return fetch('/api/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ system, prompt }), signal });
+    const key = localStorage.getItem(KEY_STORE);
+    if (!key) return new Response(JSON.stringify({ error: { type: 'no_api_key' } }), { status: 400 });
+    return fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST', signal,
+      headers: {
+        'content-type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01',
+        'anthropic-beta': 'server-side-fallback-2026-07-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify({
+        model: MODEL, max_tokens: 64000, stream: true,
+        thinking: { type: 'adaptive' }, output_config: { effort: EFFORT },
+        // If a safety classifier declines (e.g. a false positive on biology/chemistry), retry on the recommended fallback model
+        fallbacks: 'default',
+        system, messages: [{ role: 'user', content: prompt }],
+      }),
+    });
+  },
+};
+
+const normalize = d => ({ students: d.students || [], materials: d.materials || [], deleted: d.deleted || {} });
+
+// ---------- change tracking + merge (for sync and import) ----------
+// Each student/material carries updatedAt. Rather than stamping at every edit site, save() compares
+// each record with what it looked like at the last save.
+const stamps = new Map();
+const stampOf = ({ updatedAt, ...rest }) => JSON.stringify(rest);
+function initStamps() {
+  stamps.clear();
+  for (const r of [...db.students, ...db.materials]) stamps.set(r.id, stampOf(r));
+}
+function stampChanges() {
+  const now = Date.now(), seen = new Set();
+  for (const r of [...db.students, ...db.materials]) {
+    seen.add(r.id);
+    const s = stampOf(r);
+    if (stamps.get(r.id) !== s) { r.updatedAt = now; stamps.set(r.id, s); }
+  }
+  for (const id of [...stamps.keys()]) if (!seen.has(id)) { db.deleted[id] = now; stamps.delete(id); }
+}
+
+// Per record, the newer copy wins; a record deleted after its last edit stays deleted
+function mergeData(a, b) {
+  const deleted = { ...b.deleted };
+  for (const [id, t] of Object.entries(a.deleted)) deleted[id] = Math.max(t, deleted[id] || 0);
+  const pick = (xs, ys) => {
+    const out = new Map(xs.map(x => [x.id, x]));
+    for (const y of ys) { const x = out.get(y.id); if (!x || (y.updatedAt || 0) > (x.updatedAt || 0)) out.set(y.id, y); }
+    return [...out.values()].filter(r => !(deleted[r.id] >= (r.updatedAt || 0)));
+  };
+  return { students: pick(a.students, b.students), materials: pick(a.materials, b.materials).sort((x, y) => y.createdAt.localeCompare(x.createdAt)), deleted };
+}
+// Two copies hold the same data when they agree on every record's version and every deletion
+const signature = d => JSON.stringify([[...d.students, ...d.materials].map(r => [r.id, r.updatedAt || 0]).sort(), Object.entries(d.deleted).sort()]);
+
+// ---------- sync through a private GitHub repo ----------
+const toB64 = s => { const b = new TextEncoder().encode(s); let bin = ''; for (let i = 0; i < b.length; i += 0x8000) bin += String.fromCharCode.apply(null, b.subarray(i, i + 0x8000)); return btoa(bin); };
+const fromB64 = s => new TextDecoder().decode(Uint8Array.from(atob(s.replace(/\s/g, '')), c => c.charCodeAt(0)));
+
+const sync = {
+  cfg: JSON.parse(localStorage.getItem(SYNC_STORE) || 'null'), // { repo: 'owner/name', token }
+  busy: false, again: false, timer: null, lastRun: 0, status: '',
+  setStatus(text) { this.status = text; $('#sync-state').textContent = text; const el = $('#sync-status'); if (el) el.textContent = text; },
+  api(method, body, accept = 'application/vnd.github+json') {
+    return fetch(`https://api.github.com/repos/${this.cfg.repo}/contents/${SYNC_FILE}`, {
+      method, cache: 'no-store', body: body && JSON.stringify(body),
+      headers: { Authorization: `Bearer ${this.cfg.token}`, Accept: accept, 'X-GitHub-Api-Version': '2022-11-28' },
+    });
+  },
+  fail(r) {
+    const why = { 401: '金鑰無效或已過期', 403: '金鑰沒有這個儲存庫的讀寫權限', 404: '找不到儲存庫，或金鑰沒有它的權限' }[r.status] || `GitHub 回應 ${r.status}`;
+    return new Error(why);
+  },
+  async pull() {
+    const r = await this.api('GET');
+    if (r.status === 404) return { data: null, sha: null }; // no file yet (or no access: the PUT that follows will say so)
+    if (!r.ok) throw this.fail(r);
+    const j = await r.json();
+    // Files over 1 MB come back without inline content
+    const text = j.content ? fromB64(j.content) : await this.api('GET', null, 'application/vnd.github.raw+json').then(x => x.text());
+    return { data: normalize(JSON.parse(text)), sha: j.sha };
+  },
+  // Pull, merge into local, push if local has anything the remote lacks
+  async run() {
+    if (!this.cfg) return;
+    if (this.busy) { this.again = true; return; }
+    this.busy = true;
+    this.lastRun = Date.now();
+    this.setStatus('同步中…');
+    try {
+      for (let attempt = 0; ; attempt++) {
+        const remote = await this.pull();
+        if (remote.data) {
+          stampChanges(); // so an edit not yet saved still counts as newer than the remote copy
+          const before = signature(db);
+          db = mergeData(db, remote.data);
+          initStamps();
+          if (signature(db) !== before) {
+            await store.save();
+            if (!ui.editing && !$('#dlg').open) render();
+          }
+          if (signature(db) === signature(remote.data)) break;
+        }
+        const r = await this.api('PUT', { message: 'sync', content: toB64(JSON.stringify(db)), ...(remote.sha && { sha: remote.sha }) });
+        if (r.ok) break;
+        // 409/422: another device pushed in between, so merge again
+        if ((r.status !== 409 && r.status !== 422) || attempt >= 3) throw this.fail(r);
+      }
+      this.setStatus(`已同步 ${new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })}`);
+    } catch (e) {
+      this.setStatus(`⚠ 同步失敗：${e instanceof TypeError ? '沒有網路連線' : e.message}`);
+    }
+    this.busy = false;
+    if (this.again) { this.again = false; this.run(); }
+  },
+  soon() {
+    if (!this.cfg) return;
+    clearTimeout(this.timer);
+    this.timer = setTimeout(() => this.run(), 2500);
+  },
+};
+// Coming back to the app (e.g. picking up the tablet) fetches what other devices changed
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && Date.now() - sync.lastRun > 30000 && !ui.editing) sync.run();
+});
+
+let saveTimer;
+function save() {
+  clearTimeout(saveTimer);
+  $('#save-state').textContent = '儲存中…';
+  saveTimer = setTimeout(async () => {
+    stampChanges();
+    try {
+      await store.save();
+      $('#save-state').textContent = '已儲存';
+      sync.soon();
+    } catch {
+      $('#save-state').textContent = store.server ? '⚠ 儲存失敗，請確認程式視窗仍開著' : '⚠ 儲存失敗，裝置儲存空間可能不足';
+    }
+  }, 300);
+}
+
+function toast(msg) {
+  const t = $('#toast');
+  t.textContent = msg;
+  t.classList.add('on');
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(() => t.classList.remove('on'), 2600);
+}
+
+const student = id => db.students.find(s => s.id === id);
+const material = id => db.materials.find(m => m.id === id);
+const lastLesson = s => s.lessons.reduce((a, l) => (l.date > a ? l.date : a), '');
+const doneCount = s => s.units.filter(u => u.status === 'done').length;
+const daysUntil = date => Math.round((new Date(date) - new Date(today())) / 864e5);
+function examCountdown(date) {
+  if (!date) return '';
+  const n = daysUntil(date);
+  return n > 0 ? `<b style="color:var(--warn)">還有 ${n} 天</b>` : n === 0 ? '<b style="color:var(--danger)">就是今天</b>' : '<span class="muted">已考完</span>';
+}
+// Nearest exam that hasn't happened yet, as [title, date]
+const nextExam = s => EXAMS.map(([k, t]) => [t, s.exams?.[k]]).filter(([, d]) => d && daysUntil(d) >= 0).sort((a, b) => a[1].localeCompare(b[1]))[0];
+
+// ---------- markdown + math ----------
+function renderMd(src) {
+  if (!window.marked || !window.DOMPurify) return `<pre style="white-space:pre-wrap">${esc(src)}</pre>`;
+  // Pull math out first so markdown doesn't mangle backslashes and underscores
+  const math = [];
+  const stash = (tex, display) => `@@MATH${math.push({ tex, display }) - 1}@@`;
+  const text = src
+    .replace(/\$\$([\s\S]+?)\$\$/g, (_, t) => stash(t, true))
+    .replace(/\\\[([\s\S]+?)\\\]/g, (_, t) => stash(t, true))
+    .replace(/\\\(([\s\S]+?)\\\)/g, (_, t) => stash(t, false))
+    .replace(/\$([^\s$](?:[^$\n]*?[^\s$])?)\$/g, (_, t) => stash(t, false));
+  const html = DOMPurify.sanitize(marked.parse(text, { breaks: true }));
+  return html.replace(/@@MATH(\d+)@@/g, (_, i) => {
+    const m = math[i];
+    if (!window.katex) return esc(m.tex);
+    try { return katex.renderToString(m.tex, { displayMode: m.display, throwOnError: false }); } catch { return esc(m.tex); }
+  });
+}
+
+// ---------- Claude ----------
+const SYSTEM_MATERIAL = `你是一位台灣國高中自然科（理化、物理、化學、生物、地球科學）家教老師的教材編寫助手，替老師編寫可以直接印給學生使用的教材。
+
+編寫原則：
+- 使用繁體中文，以及台灣課綱的用語、符號與慣用單位。
+- 內容要正確。題目的數據要合理、算得出乾淨的答案，並且自己驗算過。
+- 配合指定的年級與難度，不要超出該年級學過的範圍；講解要讓學生自己讀也看得懂。
+- 若提供了學生的狀況與上課紀錄，請針對他的弱點與目標調整內容和題目。
+
+輸出格式：
+- 只輸出教材本身，以一個「# 標題」開頭，不要有開場白、結語或對老師說的話。
+- 使用 Markdown。數學式與物理量用 LaTeX：行內 $...$，獨立一行 $$...$$。化學式與反應式用 $\\ce{...}$，例如 $\\ce{2H2 + O2 -> 2H2O}$。
+- 無法輸出圖片。需要圖的地方用「【圖：……】」描述圖的內容，方便老師手繪或另外找圖。
+- 只要有題目，所有答案與詳解一律集中放在文件最後，以「## 解答與詳解」為標題，題目區不可透露答案（老師會把這個標題之前的部分印成學生版）。`;
+
+const SYSTEM_REPORT = `你是家教老師的助理，負責根據老師記下的單元進度與上課紀錄，整理出一份學生的學習進度報告。
+
+- 使用繁體中文與 Markdown，以「# 標題」開頭，直接輸出報告本身。
+- 只根據提供的資料整理，不要編造紀錄裡沒有的事；資料不足的地方直接說明還看不出來。
+- 依序包含：整體進度概況、已掌握的內容、需要加強的地方（點出具體單元或觀念）、作業與學習狀況、接下來 2～3 次上課的具體建議。
+- 語氣平實具體，老師可以直接拿來規劃課程，或稍加修改後傳給家長。`;
+
+function describeStudent(s, withRecords) {
+  const lines = [`學生：${s.name}`, s.grade && `年級：${s.grade}`, s.subject && `科目：${s.subject}`, s.goal && `目標：${s.goal}`, s.notes && `備註：${s.notes}`].filter(Boolean);
+  if (!withRecords) return lines.join('\n');
+  if (s.units.length) {
+    for (const [key, title] of [...EXAMS, ['', '未分類']]) {
+      const units = s.units.filter(u => (u.exam || '') === key);
+      if (!units.length) continue;
+      const date = s.exams?.[key];
+      lines.push('', `${title}範圍的單元進度${date ? `（段考日期 ${date}）` : ''}：`, ...units.map(u => `- ${u.title}【${STATUS[u.status]}】${u.note ? '　' + u.note : ''}`));
+    }
+  }
+  const lessons = [...s.lessons].sort((a, b) => a.date.localeCompare(b.date)).slice(-20);
+  if (lessons.length) {
+    lines.push('', '上課紀錄（由舊到新）：');
+    for (const l of lessons) {
+      const unit = s.units.find(u => u.id === l.unitId);
+      lines.push(`- ${l.date}${l.hours ? `（${l.hours} 小時）` : ''}${unit ? ` 單元：${unit.title}` : ''}`);
+      if (l.content) lines.push(`  上課內容：${l.content}`);
+      if (l.homework) lines.push(`  作業：${l.homework}`);
+      if (l.remarks) lines.push(`  學生表現：${l.remarks}`);
+    }
+  }
+  return lines.join('\n');
+}
+
+function materialPrompt(f) {
+  const hasQuestions = f.type === '練習題' || f.type === '小考卷';
+  const lines = [
+    `請編寫一份${f.type}。`, '',
+    `科目：${f.subject}`, `年級：${f.grade || '未指定'}`, `主題／單元：${f.topic}`, `難度：${f.level}`,
+  ];
+  if (hasQuestions) lines.push(`題數：${f.count} 題`);
+  if (f.type === '講義') lines.push('內容需包含：觀念講解、重點公式或定義、2～3 題例題（含解題步驟）、常見錯誤提醒，最後附幾題隨堂練習。');
+  if (f.type === '練習題') lines.push('題型以選擇題為主，搭配少量計算或簡答題，依難度由易到難排列。');
+  if (f.type === '小考卷') lines.push('請做成正式考卷的樣子：開頭留姓名、日期、得分欄，標明各大題配分，總分 100 分。');
+  if (f.type === '重點整理') lines.push('請整理成一頁左右、適合考前複習的重點筆記，善用條列與表格，並附上容易混淆的觀念比較。');
+  if (f.extra.trim()) lines.push('', `老師的額外要求：${f.extra.trim()}`);
+  const s = student(f.studentId);
+  if (s) lines.push('', '以下是這份教材的使用對象：', describeStudent(s, f.useRecords));
+  return lines.join('\n');
+}
+
+function explainError(status, body) {
+  const type = body?.error?.type, msg = body?.error?.message || '';
+  if (type === 'no_api_key') return '尚未設定 API key，請先到「設定」頁填入。';
+  if (status === 401) return 'API key 無效，請到「設定」頁重新填入。';
+  if (status === 429) return '請求太頻繁或已達用量上限，請稍後再試。';
+  if (type === 'network_error') return `連不上 Claude，請檢查網路連線。（${msg}）`;
+  if (status >= 500) return `Claude 服務暫時忙碌，請稍後再試。（${status}）`;
+  return `生成失敗（${status}）：${msg}`;
+}
+
+// Resolves with the stop reason; calls onText for each chunk of the answer
+async function streamClaude(system, prompt, signal, onText) {
+  const res = await store.generate(system, prompt, signal);
+  if (!res.ok) throw new Error(explainError(res.status, await res.json().catch(() => null)));
+  const reader = res.body.getReader(), dec = new TextDecoder();
+  let buf = '', stop = null;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += dec.decode(value, { stream: true });
+    const lines = buf.split('\n');
+    buf = lines.pop();
+    for (const line of lines) {
+      if (!line.startsWith('data:')) continue;
+      const ev = JSON.parse(line.slice(5));
+      if (ev.type === 'content_block_delta' && ev.delta.type === 'text_delta') onText(ev.delta.text);
+      else if (ev.type === 'message_delta') stop = ev.delta.stop_reason;
+      else if (ev.type === 'error') throw new Error(explainError(ev.error?.type === 'overloaded_error' ? 529 : 500, ev));
+    }
+  }
+  return stop;
+}
+
+function saveMaterial(meta, content) {
+  const m = { id: uid(), studentId: meta.studentId || null, title: meta.title, type: meta.type, subject: meta.subject || '', createdAt: new Date().toISOString(), content };
+  db.materials.unshift(m);
+  save();
+  return m;
+}
+
+async function runGenerate(meta, system, prompt) {
+  if (gen.running) return toast('已有內容正在生成中');
+  gen = { running: true, text: '', error: '', meta, ctrl: new AbortController() };
+  ui.view = 'generate';
+  render();
+  try {
+    const stop = await streamClaude(system, prompt, gen.ctrl.signal, t => { gen.text += t; paintGenSoon(); });
+    if (stop === 'refusal') throw new Error('AI 拒絕了這個請求，請調整主題或補充說明後再試一次。');
+    if (!gen.text.trim()) throw new Error('AI 沒有回傳內容，請再試一次。');
+    const m = saveMaterial(meta, gen.text);
+    gen = { running: false, text: '', error: '', meta: null, ctrl: null };
+    toast(stop === 'max_tokens' ? '內容太長被截斷了，已先存入教材庫' : '已存入教材庫');
+    if (ui.view === 'generate') Object.assign(ui, { view: 'material', materialId: m.id, editing: false });
+  } catch (e) {
+    gen.running = false;
+    gen.error = e.name === 'AbortError' ? '已停止生成。' : e instanceof TypeError ? '連線中斷，請檢查網路後再試一次。' : e.message;
+  }
+  render();
+}
+
+let paintQueued = false;
+function paintGenSoon() {
+  if (paintQueued) return;
+  paintQueued = true;
+  setTimeout(() => { paintQueued = false; paintGen(); }, 150);
+}
+function paintGen() {
+  const out = $('#gen-out');
+  if (!out) return;
+  if (!gen.running && !gen.text && !gen.error) { out.innerHTML = ''; return; }
+  const status = gen.running
+    ? `<div class="row spread"><span><span class="pulse"></span>${gen.text ? '撰寫中…' : 'AI 正在思考與規劃內容，通常需要半分鐘到一兩分鐘…'}</span><button class="btn" data-act="genStop">停止</button></div>`
+    : `<div class="notice err">${esc(gen.error)}</div>${gen.text ? '<button class="btn" data-act="genKeep">仍然把目前的內容存入教材庫</button>' : ''}`;
+  out.innerHTML = `<div class="panel">${status}${gen.text ? `<hr style="border:none;border-top:1px solid var(--line);margin:14px 0"><div class="doc">${renderMd(gen.text)}</div>` : ''}</div>`;
+}
+
+// ---------- views ----------
+const opts = (list, cur) => list.map(v => `<option${v === cur ? ' selected' : ''}>${esc(v)}</option>`).join('');
+const keyNotice = () => settings.hasKey ? '' : `<div class="notice">還沒設定 Claude API key，AI 功能暫時無法使用。<button class="btn" data-act="go" data-view="settings" style="margin-left:8px">前往設定</button></div>`;
+
+function viewHome() {
+  const head = `<div class="row spread head"><div><h1>學生總覽</h1><div class="muted">共 ${db.students.length} 位學生</div></div><button class="btn primary" data-act="studentForm">＋ 新增學生</button></div>`;
+  if (!db.students.length) return head + `<div class="panel empty">還沒有學生。新增第一位學生後，就可以開始記錄單元進度與上課紀錄。</div>`;
+  const cards = db.students.map(s => {
+    const total = s.units.length, done = doneCount(s), review = s.units.filter(u => u.status === 'review').length, exam = nextExam(s);
+    return `<div class="panel card" data-act="openStudent" data-id="${s.id}">
+      <div class="row spread"><h3>${esc(s.name)}</h3><span class="muted small">${esc([s.grade, s.subject].filter(Boolean).join('・'))}</span></div>
+      <div class="bar"><i style="width:${total ? done / total * 100 : 0}%"></i></div>
+      <div class="small muted">${total ? `單元 ${done} / ${total} 完成` : '尚未建立單元'}${review ? `・<span style="color:var(--review)">${review} 個需複習</span>` : ''}</div>
+      <dl class="facts"><dt>上次上課</dt><dd>${lastLesson(s) || '—'}</dd><dt>下次上課</dt><dd>${esc(s.nextLesson) || '—'}</dd>${exam ? `<dt>${exam[0]}</dt><dd>${esc(exam[1])}　${examCountdown(exam[1])}</dd>` : ''}<dt>累計</dt><dd>${s.lessons.length} 堂・${s.lessons.reduce((a, l) => a + (+l.hours || 0), 0)} 小時</dd></dl>
+    </div>`;
+  }).join('');
+  return head + `<div class="cards">${cards}</div>`;
+}
+
+function viewStudent() {
+  const s = student(ui.studentId);
+  if (!s) { ui.view = 'home'; return viewHome(); }
+  const tabs = [['units', '單元進度'], ['lessons', `上課紀錄 (${s.lessons.length})`], ['materials', '教材']];
+  const head = `<div class="row spread head">
+      <div><h1>${esc(s.name)}</h1><div class="muted">${esc([s.grade, s.subject].filter(Boolean).join('・')) || '　'}</div></div>
+      <div class="row"><button class="btn" data-act="studentForm" data-id="${s.id}">編輯資料</button><button class="btn danger" data-act="studentDelete">刪除</button></div>
+    </div>
+    <div class="panel"><div class="grid" style="margin:0">
+      <div><div class="muted small">目標</div>${esc(s.goal) || '—'}</div>
+      <div><div class="muted small">備註</div><span style="white-space:pre-wrap">${esc(s.notes) || '—'}</span></div>
+      <label>下次上課<input type="date" value="${esc(s.nextLesson)}" data-change="nextLesson"></label>
+    </div></div>
+    <div class="tabs">${tabs.map(([k, t]) => `<button class="${ui.tab === k ? 'on' : ''}" data-act="tab" data-tab="${k}">${t}</button>`).join('')}</div>`;
+  return head + ({ units: tabUnits, lessons: tabLessons, materials: tabMaterials })[ui.tab](s);
+}
+
+function tabUnits(s) {
+  const total = s.units.length, done = doneCount(s);
+  const examOpts = cur => [...EXAMS, ['', '未分類']].map(([k, t]) => `<option value="${k}"${k === cur ? ' selected' : ''}>${t}</option>`).join('');
+  const row = u => `<tr>
+      <td class="pick"><input type="checkbox" data-change="unitSel" data-id="${u.id}"${ui.sel.has(u.id) ? ' checked' : ''}></td>
+      <td class="u-title">${esc(u.title)}</td>
+      <td class="u-status"><select class="status" data-v="${u.status}" data-change="unitStatus" data-id="${u.id}">${Object.entries(STATUS).map(([k, t]) => `<option value="${k}"${u.status === k ? ' selected' : ''}>${t}</option>`).join('')}</select></td>
+      <td class="u-note"><input value="${esc(u.note)}" placeholder="備註（例：公式會背但單位常錯）" data-change="unitNote" data-id="${u.id}"></td>
+      <td class="u-exam"><select class="exam" title="移到其他段考" data-change="unitExam" data-id="${u.id}">${examOpts(u.exam || '')}</select></td>
+      <td class="act"><button class="btn link" title="上移" data-act="unitUp" data-id="${u.id}">↑</button><button class="btn link" title="刪除" data-act="unitDelete" data-id="${u.id}">✕</button></td>
+    </tr>`;
+  const section = ([key, title]) => {
+    const units = s.units.filter(u => (u.exam || '') === key);
+    if (!key && !units.length) return '';
+    const d = units.filter(u => u.status === 'done').length;
+    return `<div class="panel">
+      <div class="row spread">
+        <div><h2 style="margin:0">${title}</h2><div class="small muted">${units.length ? `${d} / ${units.length} 個單元完成` : '尚未安排單元'}</div></div>
+        ${key ? `<div class="row"><span class="small" id="exam-cd-${key}">${examCountdown(s.exams?.[key])}</span><label class="inline">段考日期<input type="date" value="${esc(s.exams?.[key])}" data-change="examDate" data-id="${key}"></label></div>` : ''}
+      </div>
+      ${units.length ? `<div class="bar"><i style="width:${d / units.length * 100}%"></i></div><table class="units"><tr><th class="pick"><input type="checkbox" title="全選這一區" data-change="unitSelAll" data-id="${key}"${units.every(u => ui.sel.has(u.id)) ? ' checked' : ''}></th><th>單元</th><th>狀態</th><th>備註</th><th>範圍</th><th></th></tr>${units.map(row).join('')}</table>` : ''}
+    </div>`;
+  };
+  const bulk = ui.sel.size ? `<div class="bulk"><b>已選 ${ui.sel.size} 個單元</b><span>移到</span>${[...EXAMS, ['', '未分類']].map(([k, t]) => `<button class="btn" data-act="bulkMove" data-exam="${k}">${t}</button>`).join('')}<button class="btn link" data-act="bulkClear">取消選取</button></div>` : '';
+  return `<div class="panel">
+      <div class="row spread"><h2 style="margin:0">整體進度</h2><button class="btn" data-act="report"${settings.hasKey ? '' : ' disabled'}>AI 整理進度報告</button></div>
+      <div class="bar"><i style="width:${total ? done / total * 100 : 0}%"></i></div>
+      <div class="small muted">${total ? `${done} / ${total} 個單元完成` : '還沒有單元，請在最下方新增。'}</div>
+    </div>
+    ${[...EXAMS, ['', '未分類']].map(section).join('')}
+    <div class="panel"><h2>新增單元</h2>
+      <textarea id="unit-new" placeholder="一行一個單元，可以一次貼上整個段考範圍，例如：&#10;4-1 氧化與還原&#10;4-2 氧化還原的應用&#10;5-1 電解質"></textarea>
+      <div class="row" style="margin-top:10px"><label class="inline">加到<select id="unit-new-exam" data-change="addExam">${examOpts(ui.addExam)}</select></label><button class="btn primary" data-act="unitAdd">新增</button></div>
+    </div>${bulk}`;
+}
+
+function tabLessons(s) {
+  const list = [...s.lessons].sort((a, b) => b.date.localeCompare(a.date)).map(l => {
+    const unit = s.units.find(u => u.id === l.unitId);
+    return `<div class="lesson">
+      <div class="row spread"><div class="row"><h3>${esc(l.date)}</h3>${l.hours ? `<span class="muted small">${esc(l.hours)} 小時</span>` : ''}${unit ? `<span class="tag">${esc(unit.title)}</span>` : ''}</div><button class="btn link" data-act="lessonDelete" data-id="${l.id}">刪除</button></div>
+      ${l.content ? `<p><b>上課內容</b>${esc(l.content)}</p>` : ''}${l.homework ? `<p><b>作業</b>${esc(l.homework)}</p>` : ''}${l.remarks ? `<p><b>學生表現</b>${esc(l.remarks)}</p>` : ''}
+    </div>`;
+  }).join('');
+  return `<form class="panel" id="lesson-form"><h2>新增上課紀錄</h2>
+      <div class="grid">
+        <label>日期<input type="date" name="date" value="${today()}" required></label>
+        <label>時數<input type="number" name="hours" value="2" min="0" step="0.5"></label>
+        <label>單元<select name="unitId"><option value="">（不指定）</option>${s.units.map(u => `<option value="${u.id}">${esc(u.title)}</option>`).join('')}</select></label>
+        <label class="wide">上課內容<textarea name="content" placeholder="今天教了什麼"></textarea></label>
+        <label>作業<textarea name="homework" placeholder="出的作業"></textarea></label>
+        <label>學生表現<textarea name="remarks" placeholder="哪裡懂了、哪裡還卡住"></textarea></label>
+      </div>
+      <button class="btn primary">儲存紀錄</button>
+    </form>
+    <div class="panel">${list || '<div class="empty">還沒有上課紀錄。</div>'}</div>`;
+}
+
+function materialRows(list, showStudent) {
+  return list.map(m => `<tr class="clickable" data-act="openMaterial" data-id="${m.id}">
+      <td>${esc(m.title)}</td><td><span class="tag">${esc(m.type)}</span></td>
+      ${showStudent ? `<td class="muted">${esc(student(m.studentId)?.name) || '—'}</td>` : ''}
+      <td class="muted small">${esc(m.createdAt.slice(0, 10))}</td>
+    </tr>`).join('');
+}
+
+function tabMaterials(s) {
+  const list = db.materials.filter(m => m.studentId === s.id);
+  return `<div class="panel"><div class="row spread" style="margin-bottom:12px"><h2 style="margin:0">${esc(s.name)} 的教材</h2><button class="btn primary" data-act="genFor">＋ 為這位學生生成教材</button></div>
+    ${list.length ? `<table><tr><th>標題</th><th>類型</th><th>日期</th></tr>${materialRows(list, false)}</table>` : '<div class="empty">還沒有為這位學生生成過教材。</div>'}</div>`;
+}
+
+function viewGenerate() {
+  const f = genForm, hasQuestions = f.type === '練習題' || f.type === '小考卷';
+  return `<div class="head"><h1>生成教材</h1><div class="muted">填好條件後由 Claude 編寫，完成後自動存入教材庫，可再修改與列印。</div></div>
+    ${keyNotice()}
+    <form class="panel" id="gen-form">
+      <div class="grid">
+        <label>學生（可不選）<select name="studentId"><option value="">通用教材</option>${db.students.map(s => `<option value="${s.id}"${s.id === f.studentId ? ' selected' : ''}>${esc(s.name)}</option>`).join('')}</select></label>
+        <label>教材類型<select name="type">${opts(TYPES, f.type)}</select></label>
+        <label>科目<select name="subject">${opts(SUBJECTS, f.subject)}</select></label>
+        <label>年級<input name="grade" value="${esc(f.grade)}" placeholder="例：國二"></label>
+        <label class="wide">主題／單元<input name="topic" value="${esc(f.topic)}" placeholder="例：氧化還原反應、牛頓第二運動定律" required></label>
+        <label>難度<select name="level">${opts(LEVELS, f.level)}</select></label>
+        ${hasQuestions ? `<label>題數<input type="number" name="count" value="${esc(f.count)}" min="1" max="50"></label>` : ''}
+        <label class="wide">額外要求（可不填）<textarea name="extra" placeholder="例：多出生活情境題、加強單位換算、搭配課本第 4 章">${esc(f.extra)}</textarea></label>
+        ${f.studentId ? `<label class="check wide"><input type="checkbox" name="useRecords"${f.useRecords ? ' checked' : ''}>參考這位學生的單元進度與上課紀錄，針對弱點出題</label>` : ''}
+      </div>
+      <button class="btn primary"${gen.running || !settings.hasKey ? ' disabled' : ''}>生成教材</button>
+    </form>
+    <div id="gen-out"></div>`;
+}
+
+function viewLibrary() {
+  const list = db.materials.filter(m => !ui.libFilter || (ui.libFilter === 'none' ? !m.studentId : m.studentId === ui.libFilter));
+  return `<div class="row spread head"><div><h1>教材庫</h1><div class="muted">共 ${db.materials.length} 份</div></div>
+      <select data-change="libFilter" style="width:180px"><option value="">全部</option><option value="none"${ui.libFilter === 'none' ? ' selected' : ''}>通用教材</option>${db.students.map(s => `<option value="${s.id}"${s.id === ui.libFilter ? ' selected' : ''}>${esc(s.name)}</option>`).join('')}</select></div>
+    <div class="panel">${list.length ? `<table><tr><th>標題</th><th>類型</th><th>學生</th><th>日期</th></tr>${materialRows(list, true)}</table>` : '<div class="empty">這裡還沒有教材。到「生成教材」做第一份吧。</div>'}</div>`;
+}
+
+function viewMaterial() {
+  const m = material(ui.materialId);
+  if (!m) { ui.view = 'library'; return viewLibrary(); }
+  const s = student(m.studentId), hasAnswers = /^#{1,3}\s*解答/m.test(m.content);
+  return `<div class="row spread head">
+      <div><h1>${esc(m.title)}</h1><div class="muted"><span class="tag">${esc(m.type)}</span> ${esc(s?.name || '通用教材')}・${esc(m.createdAt.slice(0, 10))}</div></div>
+      <div class="row">
+        ${hasAnswers ? `<button class="btn primary" data-act="print" data-answers="0">列印學生版（不含解答）</button><button class="btn" data-act="print" data-answers="1">列印教師版</button>` : `<button class="btn primary" data-act="print" data-answers="1">列印／存成 PDF</button>`}
+        <button class="btn" data-act="copy">複製</button>
+        <button class="btn" data-act="edit">${ui.editing ? '完成編輯' : '編輯'}</button>
+        <button class="btn danger" data-act="materialDelete">刪除</button>
+      </div>
+    </div>
+    ${ui.editing
+      ? `<div class="panel"><label>標題<input id="edit-title" value="${esc(m.title)}"></label><label style="margin-top:12px">內容（Markdown，數學式用 $...$）<textarea id="edit-content" style="min-height:60vh;font-family:Consolas,monospace;font-size:14px">${esc(m.content)}</textarea></label></div>`
+      : `<div class="panel doc">${renderMd(m.content)}</div>`}`;
+}
+
+function viewSettings() {
+  return `<div class="head"><h1>設定</h1></div>
+    <div class="panel"><h2>Claude API key</h2>
+      <p>目前狀態：${settings.hasKey ? '<b style="color:var(--done)">已設定</b>' : '<b style="color:var(--warn)">尚未設定</b>'}${settings.model ? `　<span class="muted small">使用模型 ${esc(settings.model)}</span>` : ''}</p>
+      <p class="muted small">生成教材與進度報告需要 Anthropic 的 API key。請到 <a href="https://platform.claude.com/" target="_blank" rel="noopener">platform.claude.com</a> 申請並儲值，再把 key 貼在這裡。費用依用量由 Anthropic 向你收取，教材越長越貴。<br>${store.server
+        ? 'key 只會加密存在這台電腦的 Windows 帳號底下，不會放進資料檔，也不會同步到其他裝置。'
+        : 'key 只存在這台裝置的瀏覽器裡，不會同步到其他裝置，每台裝置要各自填一次。請不要在別人的裝置上填。'}</p>
+      <form id="key-form" class="row"><input type="password" name="apiKey" placeholder="sk-ant-…" autocomplete="off" style="flex:1;min-width:220px" required><button class="btn primary">儲存</button>${settings.hasKey ? '<button type="button" class="btn danger" data-act="keyClear">清除</button>' : ''}</form>
+    </div>
+    <div class="panel"><h2>多裝置同步</h2>
+      ${sync.cfg ? `<p>同步到 <b>${esc(sync.cfg.repo)}</b>　<span class="muted small" id="sync-status">${esc(sync.status)}</span></p>
+        <p class="muted small">每次修改後會自動上傳，回到 App 時會自動抓其他裝置的修改。兩台裝置同時改到同一位學生時，以較晚儲存的那一份為準。</p>
+        <div class="row"><button class="btn primary" data-act="syncNow">立即同步</button><button class="btn danger" data-act="syncOff">在這台裝置停用</button></div>`
+      : `<p class="muted small">用你自己 GitHub 帳號裡的一個<b>私人</b>儲存庫存放資料，電腦、手機、平板填同一組設定就會互相同步。<br>
+          1. 在 GitHub 建立一個 Private 儲存庫（勾選 Add a README）。<br>
+          2. 到 Settings → Developer settings → Fine-grained tokens 產生金鑰：Repository access 只選這個儲存庫，Permissions 的 Contents 設為 Read and write。<br>
+          3. 把儲存庫名稱和金鑰填在下面。金鑰只存在這台裝置的瀏覽器裡。</p>
+        <form id="sync-form" class="grid" style="margin:0">
+          <label>儲存庫<input name="repo" placeholder="你的帳號/儲存庫名稱" pattern="[^/\\s]+/[^/\\s]+" autocapitalize="off" required></label>
+          <label>金鑰<input type="password" name="token" placeholder="github_pat_…" autocomplete="off" required></label>
+          <div class="wide"><button class="btn primary">啟用同步</button></div>
+        </form>`}
+    </div>
+    <div class="panel"><h2>資料備份</h2>
+      <p class="muted small">${store.server
+        ? '資料存在這台電腦的 <code>tutor/data/data.json</code>，每次啟動時會自動備份一份到 <code>data.bak.json</code>。'
+        : '資料存在這台裝置的瀏覽器裡。清除瀏覽資料或移除 App 會一併刪掉，請開啟同步或定期匯出備份。'}</p>
+      <div class="row"><button class="btn" data-act="exportData">匯出備份檔</button><label class="btn" style="color:var(--ink);font-size:15px">匯入備份檔<input type="file" id="import-file" accept=".json,application/json" hidden></label></div>
+    </div>`;
+}
+
+function render() {
+  // A unit selection only makes sense on the units tab of the student it was made for
+  if (ui.view !== 'student' || ui.tab !== 'units' || ui.selFor !== ui.studentId) { ui.sel.clear(); ui.selFor = ui.studentId; }
+  const views ={ home: viewHome, student: viewStudent, generate: viewGenerate, library: viewLibrary, material: viewMaterial, settings: viewSettings };
+  $('#main').innerHTML = views[ui.view]();
+  const navView = { material: 'library' }[ui.view] || ui.view;
+  $('#nav-students').innerHTML = db.students.map(s => `<button class="${ui.view === 'student' && s.id === ui.studentId ? 'on' : ''}" data-act="openStudent" data-id="${s.id}">${esc(s.name)}</button>`).join('')
+    + '<button class="add" data-act="studentForm">＋ 新增學生</button>';
+  document.querySelectorAll('#nav > button').forEach(b => b.classList.toggle('on', b.dataset.view === navView));
+  if (ui.view === 'generate') paintGen();
+}
+
+// ---------- actions ----------
+function commitEdit() {
+  const m = material(ui.materialId);
+  if (!ui.editing || !m || !$('#edit-content')) return;
+  m.title = $('#edit-title').value.trim() || m.title;
+  m.content = $('#edit-content').value;
+  save();
+}
+
+function openStudentForm(s) {
+  const dlg = $('#dlg');
+  dlg.innerHTML = `<form method="dialog" id="student-form"><h2>${s ? '編輯學生資料' : '新增學生'}</h2>
+      <div class="grid">
+        <label>姓名<input name="name" value="${esc(s?.name)}" required></label>
+        <label>年級<input name="grade" value="${esc(s?.grade)}" placeholder="例：國二"></label>
+        <label>科目<input name="subject" value="${esc(s?.subject ?? '理化')}" list="subject-list"><datalist id="subject-list">${SUBJECTS.map(v => `<option value="${v}">`).join('')}</datalist></label>
+        <label class="wide">目標<input name="goal" value="${esc(s?.goal)}" placeholder="例：會考自然 A、段考進步到 80 分"></label>
+        <label class="wide">備註<textarea name="notes" placeholder="學校、使用的課本版本、學習習慣…">${esc(s?.notes)}</textarea></label>
+      </div>
+      <div class="row" style="justify-content:flex-end"><button type="button" class="btn" data-act="dlgClose">取消</button><button class="btn primary">儲存</button></div>
+    </form>`;
+  dlg.dataset.id = s?.id || '';
+  dlg.showModal();
+}
+
+const actions = {
+  go: el => { ui.view = el.dataset.view; },
+  openStudent: el => Object.assign(ui, { view: 'student', studentId: el.dataset.id, tab: 'units' }),
+  tab: el => { ui.tab = el.dataset.tab; },
+  studentForm: el => { openStudentForm(student(el.dataset.id)); return false; },
+  dlgClose: () => { $('#dlg').close(); return false; },
+  studentDelete: () => {
+    const s = student(ui.studentId);
+    if (!confirm(`確定刪除「${s.name}」以及所有單元與上課紀錄嗎？已生成的教材會保留在教材庫。`)) return false;
+    db.students = db.students.filter(x => x !== s);
+    db.materials.forEach(m => { if (m.studentId === s.id) m.studentId = null; });
+    ui.view = 'home';
+    save();
+  },
+  unitAdd: () => {
+    const titles = $('#unit-new').value.split('\n').map(t => t.trim()).filter(Boolean);
+    if (!titles.length) return false;
+    student(ui.studentId).units.push(...titles.map(title => ({ id: uid(), title, status: 'todo', note: '', exam: ui.addExam })));
+    save();
+  },
+  unitUp: el => {
+    // Swap with the previous unit of the same exam, which may not be the adjacent array entry
+    const units = student(ui.studentId).units, i = units.findIndex(u => u.id === el.dataset.id);
+    let j = i - 1;
+    while (j >= 0 && (units[j].exam || '') !== (units[i].exam || '')) j--;
+    if (j < 0) return false;
+    [units[j], units[i]] = [units[i], units[j]];
+    save();
+  },
+  bulkMove: el => {
+    student(ui.studentId).units.forEach(u => { if (ui.sel.has(u.id)) u.exam = el.dataset.exam; });
+    toast(`已移動 ${ui.sel.size} 個單元`);
+    ui.sel.clear();
+    save();
+  },
+  bulkClear: () => { ui.sel.clear(); },
+  unitDelete: el => {
+    const s = student(ui.studentId);
+    s.units = s.units.filter(u => u.id !== el.dataset.id);
+    s.lessons.forEach(l => { if (l.unitId === el.dataset.id) l.unitId = ''; });
+    save();
+  },
+  lessonDelete: el => {
+    if (!confirm('確定刪除這筆上課紀錄嗎？')) return false;
+    const s = student(ui.studentId);
+    s.lessons = s.lessons.filter(l => l.id !== el.dataset.id);
+    save();
+  },
+  report: () => {
+    const s = student(ui.studentId);
+    if (!s.units.length && !s.lessons.length) { toast('請先建立單元或上課紀錄'); return false; }
+    runGenerate({ studentId: s.id, type: '進度報告', title: `${s.name} 學習進度報告 ${today()}` }, SYSTEM_REPORT, `請整理以下這位學生的學習進度報告。今天是 ${today()}。\n\n${describeStudent(s, true)}`);
+    return false;
+  },
+  genFor: () => {
+    const s = student(ui.studentId);
+    Object.assign(genForm, { studentId: s.id, grade: s.grade || genForm.grade, subject: SUBJECTS.includes(s.subject) ? s.subject : genForm.subject });
+    ui.view = 'generate';
+  },
+  genStop: () => { gen.ctrl?.abort(); return false; },
+  genKeep: () => {
+    const m = saveMaterial(gen.meta, gen.text);
+    gen = { running: false, text: '', error: '', meta: null, ctrl: null };
+    Object.assign(ui, { view: 'material', materialId: m.id, editing: false });
+  },
+  openMaterial: el => Object.assign(ui, { view: 'material', materialId: el.dataset.id, editing: false }),
+  edit: () => { commitEdit(); ui.editing = !ui.editing; },
+  copy: async () => { await navigator.clipboard.writeText(material(ui.materialId).content); toast('已複製 Markdown 原文'); return false; },
+  print: el => {
+    commitEdit();
+    let md = material(ui.materialId).content;
+    if (el.dataset.answers === '0') {
+      const i = md.search(/^#{1,3}\s*解答/m);
+      if (i > 0) md = md.slice(0, i).replace(/\n\s*-{3,}\s*$/, '\n');
+    }
+    $('#print-area').innerHTML = renderMd(md);
+    window.print();
+    return false;
+  },
+  materialDelete: () => {
+    if (!confirm('確定刪除這份教材嗎？')) return false;
+    db.materials = db.materials.filter(m => m.id !== ui.materialId);
+    ui.view = 'library';
+    save();
+  },
+  keyClear: () => { postKey(''); return false; },
+  syncNow: () => { sync.run(); return false; },
+  syncOff: () => {
+    if (!confirm('停用後這台裝置不再同步，資料會保留在這台裝置和 GitHub 上。要停用嗎？')) return false;
+    localStorage.removeItem(SYNC_STORE);
+    sync.cfg = null;
+    sync.setStatus('');
+  },
+  exportData: () => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(db, null, 1)], { type: 'application/json' }));
+    a.download = `家教助手備份-${today()}.json`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+    return false;
+  },
+};
+
+async function postKey(apiKey) {
+  await store.setKey(apiKey);
+  toast(apiKey ? 'API key 已儲存' : 'API key 已清除');
+  render();
+}
+
+async function importData(file) {
+  let data;
+  try {
+    data = JSON.parse(await file.text());
+    if (!Array.isArray(data.students)) throw new Error();
+  } catch { return toast('這不是家教助手的備份檔'); }
+  data = normalize(data);
+  if (!confirm(`備份檔裡有 ${data.students.length} 位學生、${data.materials.length} 份教材。\n\n匯入後會和這台裝置現有的資料合併；同一位學生或同一份教材以較新的版本為準。要繼續嗎？`)) return;
+  stampChanges();
+  db = mergeData(db, data);
+  initStamps();
+  await store.save();
+  sync.soon();
+  toast('已匯入');
+  render();
+}
+
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-act]');
+  if (!el || el.disabled) return;
+  // Leaving the editor by any route keeps what was typed
+  if (el.dataset.act !== 'edit' && el.dataset.act !== 'print') commitEdit();
+  if (actions[el.dataset.act](el) !== false) render();
+});
+
+const changes = {
+  nextLesson: el => { student(ui.studentId).nextLesson = el.value; },
+  unitNote: el => { student(ui.studentId).units.find(u => u.id === el.dataset.id).note = el.value; },
+  unitStatus: el => { student(ui.studentId).units.find(u => u.id === el.dataset.id).status = el.value; render(); },
+  unitSel: el => { ui.sel[el.checked ? 'add' : 'delete'](el.dataset.id); render(); return false; },
+  unitSelAll: el => {
+    student(ui.studentId).units.filter(u => (u.exam || '') === el.dataset.id).forEach(u => ui.sel[el.checked ? 'add' : 'delete'](u.id));
+    render();
+    return false;
+  },
+  unitExam: el => { student(ui.studentId).units.find(u => u.id === el.dataset.id).exam = el.value; render(); },
+  // Updates the countdown in place: a full re-render would steal focus while a date is being typed
+  examDate: el => {
+    const s = student(ui.studentId);
+    s.exams = { ...s.exams, [el.dataset.id]: el.value };
+    $(`#exam-cd-${el.dataset.id}`).innerHTML = examCountdown(el.value);
+  },
+  addExam: el => { ui.addExam = el.value; return false; },
+  libFilter: el => { ui.libFilter = el.value; render(); return false; },
+};
+document.addEventListener('change', e => {
+  const el = e.target;
+  if (el.id === 'import-file') { if (el.files[0]) importData(el.files[0]); el.value = ''; return; }
+  if (el.dataset.change) { if (changes[el.dataset.change](el) !== false) save(); return; }
+  if (el.form?.id === 'gen-form') {
+    genForm[el.name] = el.type === 'checkbox' ? el.checked : el.value;
+    if (el.name === 'studentId') {
+      const s = student(el.value);
+      if (s) Object.assign(genForm, { grade: s.grade || genForm.grade, subject: SUBJECTS.includes(s.subject) ? s.subject : genForm.subject });
+    }
+    // These two change which fields the form shows
+    if (el.name === 'studentId' || el.name === 'type') render();
+  }
+});
+
+document.addEventListener('submit', e => {
+  const form = e.target, data = Object.fromEntries(new FormData(form));
+  if (form.id === 'student-form') {
+    const id = $('#dlg').dataset.id;
+    for (const k in data) data[k] = data[k].trim();
+    if (id) Object.assign(student(id), data);
+    else {
+      const s = { id: uid(), ...data, nextLesson: '', units: [], lessons: [] };
+      db.students.push(s);
+      Object.assign(ui, { view: 'student', studentId: s.id, tab: 'units' });
+    }
+    save();
+    render();
+    return; // method="dialog" closes it
+  }
+  e.preventDefault();
+  if (form.id === 'lesson-form') {
+    student(ui.studentId).lessons.push({ id: uid(), ...data });
+    save();
+    render();
+    toast('已新增上課紀錄');
+  } else if (form.id === 'gen-form') {
+    const f = Object.assign(genForm, data, { topic: data.topic.trim(), useRecords: 'useRecords' in data });
+    runGenerate({ studentId: f.studentId, type: f.type, subject: f.subject, title: `${f.topic} ${f.type}` }, SYSTEM_MATERIAL, materialPrompt(f));
+  } else if (form.id === 'key-form') {
+    postKey(data.apiKey.trim());
+  } else if (form.id === 'sync-form') {
+    sync.cfg = { repo: data.repo.trim(), token: data.token.trim() };
+    localStorage.setItem(SYNC_STORE, JSON.stringify(sync.cfg));
+    render();
+    sync.run();
+  }
+});
+
+(async function init() {
+  await store.init();
+  try {
+    db = normalize(await store.load());
+  } catch {
+    $('#main').innerHTML = '<div class="notice err">讀取資料失敗，請重新整理再試一次。</div>';
+    return;
+  }
+  initStamps();
+  render();
+  sync.run();
+  // Ask the browser not to evict our data when the device runs low on space
+  if (!store.server) navigator.storage?.persist?.();
+})();
+
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
